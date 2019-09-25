@@ -1,0 +1,88 @@
+train %>% ggplot(aes(PM10, color=State)) +
++   geom_histogram(alpha=0.6, binwidth = 5) + facet_grid(.~year) +
++ scale_fill_viridis(discrete=TRUE) +
++   scale_color_viridis(discrete=TRUE)
+Error in train %>% ggplot(aes(PM10, color = State)) : 
+  could not find function "%>%"
+> library(hrbrthemes)
+Error: package or namespace load failed for ‘hrbrthemes’ in loadNamespace(i, c(lib.loc, .libPaths()), versionCheck = vI[[i]]):
+ there is no package called ‘extrafontdb’
+> train %>% ggplot(aes(PM10, color=State)) +
++   geom_histogram(alpha=0.6, binwidth = 5) + facet_grid(.~year) +
++ scale_fill_viridis(discrete=TRUE) +
++   scale_color_viridis(discrete=TRUE)
+Error in train %>% ggplot(aes(PM10, color = State)) : 
+  could not find function "%>%"
+> library("tidyverse")
+-- Attaching packages --------------------------------------- tidyverse 1.2.1 --
+v ggplot2 3.2.0     v purrr   0.3.2
+v tibble  2.1.3     v dplyr   0.8.3
+v tidyr   0.8.3     v stringr 1.4.0
+v readr   1.3.1     v forcats 0.4.0
+-- Conflicts ------------------------------------------ tidyverse_conflicts() --
+x dplyr::filter() masks stats::filter()
+x dplyr::lag()    masks stats::lag()
+> train %>% ggplot(aes(PM10, color=State)) +
++   geom_histogram(alpha=0.6, binwidth = 5) + facet_grid(.~year)
+Error in eval(lhs, parent, parent) : object 'train' not found
+> train <- read.csv('E:/Machinehack/Air Pollution/All_Cities.csv', stringsAsFactors = F)
+> head(train)
+  year month day SO2 NO2 PM10 Stn.Code          State          City
+1 2015     1   1   9  18   46      233 Andhra Pradesh Visakhapatnam
+2 2015     1   4   8  18   27      233 Andhra Pradesh Visakhapatnam
+3 2015     1   7   9  15   29      233 Andhra Pradesh Visakhapatnam
+4 2015     1  10   7  17   78      233 Andhra Pradesh Visakhapatnam
+5 2015     1  13   9  23   35      233 Andhra Pradesh Visakhapatnam
+6 2015     1  16   9  15   30      233 Andhra Pradesh Visakhapatnam
+> class(train)
+[1] "data.frame"
+> 
+> # density
+> 
+> nlevels(train$PM10)
+[1] 0
+> 
+> max(train$SO2)
+[1] 909
+> min(train$SO2)
+[1] 0
+> 
+> str(train)
+'data.frame':	213083 obs. of  9 variables:
+ $ year    : int  2015 2015 2015 2015 2015 2015 2015 2015 2015 2015 ...
+ $ month   : int  1 1 1 1 1 1 1 1 1 2 ...
+ $ day     : int  1 4 7 10 13 16 19 22 25 1 ...
+ $ SO2     : num  9 8 9 7 9 9 9 8 9 6 ...
+ $ NO2     : num  18 18 15 17 23 15 18 12 18 11 ...
+ $ PM10    : num  46 27 29 78 35 30 76 42 39 39 ...
+ $ Stn.Code: int  233 233 233 233 233 233 233 233 233 233 ...
+ $ State   : chr  "Andhra Pradesh" "Andhra Pradesh" "Andhra Pradesh" "Andhra Pradesh" ...
+ $ City    : chr  "Visakhapatnam" "Visakhapatnam" "Visakhapatnam" "Visakhapatnam" ...
+> train %>% ggplot(aes(PM10, color=State)) +
++   geom_histogram(alpha=0.6, binwidth = 5) + facet_grid(.~year)
+> train %>% ggplot(aes(PM10, color=State)) +
++   geom_histogram(alpha=0.6, binwidth = 5) + facet_grid(.~year)
+> library(hrbrthemes)
+Error: package or namespace load failed for ‘hrbrthemes’ in loadNamespace(i, c(lib.loc, .libPaths()), versionCheck = vI[[i]]):
+ there is no package called ‘extrafontdb’
+> # install.packages("ggplot2")
+> # load package and data
+> options(scipen=999)  # turn-off scientific notation like 1e+48
+> library(ggplot2)
+> theme_set(theme_bw())  # pre-set the bw theme.
+> data("midwest", package = "ggplot2")
+> # midwest <- read.csv("http://goo.gl/G1K41K")  # bkup data source
+> 
+> # Scatterplot
+> gg <- ggplot(midwest, aes(x=area, y=poptotal)) + 
++   geom_point(aes(col=state, size=popdensity)) + 
++   geom_smooth(method="loess", se=F) + 
++   xlim(c(0, 0.1)) + 
++   ylim(c(0, 500000)) + 
++   labs(subtitle="Area Vs Population", 
++        y="Population", 
++        x="Area", 
++        title="Scatterplot", 
++        caption = "Source: midwest")
+> 
+> plot(gg)
