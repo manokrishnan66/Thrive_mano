@@ -1,0 +1,5 @@
+library(tidyverse)
+dt <- data.frame(E = c(1,2,3,4) , Y= c(5,6,7,8))
+save(dt,file = "E:/R_Projects/Thrive_mano/rda/dt.rda")
+dt %>% ggplot(aes(E,Y)) + geom_point()
+ggsave("E:/R_Projects/Thrive_mano/figs/dt.jpg")
