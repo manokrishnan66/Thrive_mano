@@ -112,7 +112,16 @@ dim(dat)
   df1
   df2
   
+  final <- intersect(df1, df2)
+  final
+  
+  final <- union(df1, df2)
+  final
+  
   final <- setdiff(df1, df2)
+  final
+  
+  final <- setequal(df1, df2)
   final
   
   install.packages("Lahman")
@@ -125,4 +134,18 @@ dim(dat)
   top %>% as_tibble()
   
   Master %>% as_tibble()
-
+  
+  top_names <- top %>% left_join(Master) %>%
+    select(playerID)
+  
+  Salaries
+  
+  top_salary <- Salaries %>% filter(yearID == 2016) %>%
+    right_join(top_names)%>%
+    select(nameFirst, nameLast, teamID, HR, salary)
+  
+  award_16 <- AwardsPlayers %>% filter(yearID == 2016) %>% select(playerID)
+  top_names %>% left_join(award_16)
+  
+  intersect(top_names,award_16)
+  setdiff(award_16,top_names)
