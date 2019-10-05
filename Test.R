@@ -1,3 +1,4 @@
+library(tidyverse)
 getwd()
 dir <-"/R_Projects/Thrive_mano/Projects" 
 setwd(dir)
@@ -91,6 +92,37 @@ tmp2 <- unite(tmp, column_name, c(key, gender))
 tmp2 %>%  spread(column_name, value)
 
 
+tab1 <- data.frame(state = c('Alabama','Alaska','Arizona','Delaware','District of Columbia'), population = c(4779736,710231,6392017,897934,601723))
+
+tab2 <- data.frame(state = c('Alabama','Alaska','Arizona','California','Colorado','Connecticut'), electoral_votes = c(9,3,11,55,9,7))
+
+dim(tab1)
+
+dim(tab2)
+dat <- left_join(tab1, tab2, by = 'state')
+dim(dat)
+  dat <- semi_join(tab1, tab2, by = 'state')
+  dat
 
 
+  dat <- bind_cols(tab1,tab2)
+  
+  df1 <- data.frame(x = c('a','b'), y = c('a','a'))
+  df2 <- data.frame(x = c('a','a'), y = c('a','b'))
+  df1
+  df2
+  
+  final <- setdiff(df1, df2)
+  final
+  
+  install.packages("Lahman")
+  library(Lahman)
+  
+  top <- Batting %>% 
+    filter(yearID == 2016) %>%
+    arrange(desc(HR)) %>%    # arrange by descending HR count
+    slice(1:10)    # take entries 1-10
+  top %>% as_tibble()
+  
+  Master %>% as_tibble()
 
