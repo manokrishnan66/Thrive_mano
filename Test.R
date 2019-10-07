@@ -149,3 +149,23 @@ dim(dat)
   
   intersect(top_names,award_16)
   setdiff(award_16,top_names)
+  
+  
+  #--------Webscraping--------------
+  library(rvest)
+  url <- "https://web.archive.org/web/20181024132313/http://www.stevetheump.com/Payrolls.htm"
+  h <- read_html(url)
+  class(h)
+  h
+  tab <- h %>% html_nodes("table")
+  html_text(tab[[20]])
+  html_table(tab[[20]])
+  html_table(tab[[length(tab)-1]])
+  tab_1 <-html_table(tab[[10]])
+  tab_1 <- tab_1[-1,]
+  tab_1 <- tab_1[,-1]
+  names(tab_1) <- c("Team", "Payroll", "Average")
+  tab_2 <-html_table(tab[[19]])
+  tab_2 <- tab_2[-1,]
+  names(tab_2) <- c("Team", "Payroll", "Average")
+  tab_1 %>% full_join(tab_2,by = 'Team')
