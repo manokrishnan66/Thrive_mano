@@ -1,4 +1,5 @@
 library(tidyverse)
+install.packages("htmlwidgets")
 getwd()
 dir <-"/R_Projects/Thrive_mano/Projects" 
 setwd(dir)
@@ -169,3 +170,134 @@ dim(dat)
   tab_2 <- tab_2[-1,]
   names(tab_2) <- c("Team", "Payroll", "Average")
   tab_1 %>% full_join(tab_2,by = 'Team')
+  
+  
+  library(rvest)
+  library(tidyverse)
+  url <-"https://en.wikipedia.org/w/index.php?title=Opinion_polling_for_the_United_Kingdom_European_Union_membership_referendum&oldid=896735054"
+  href <- read_html(url)
+  ref <- href %>% html_nodes("table")
+  html_table(ref[[6]],fill=TRUE)
+  length(ref)
+  
+  head(dat)
+  
+  dot <- data.frame(month = c("January"), Sales = c("$128,568"), Profit = c("$16,234"))
+  
+  class(dot$Sales)
+  dot %>% mutate_at(2:3, parse_number)
+  dot %>% mutate_at(2:3, as.numeric)
+  dot %>% mutate_at(2:3, funs(str_replace_all(., c("\\$|,"), ""))) %>% 
+    mutate_at(2:3, as.numeric)
+  
+  
+  yes <- c("5", "6", "5'10", "5 feet", "4'11")
+  no <- c("", ".", "Five", "six")
+  s <- c(yes, no)
+  pattern <- "\\d"
+  # [56] means 5 or 6
+  str_view(s, "[56]")
+  # [4-7] means 4, 5, 6 or 7
+  yes <- as.character(4:7)
+  no <- as.character(1:3)
+  s <- c(yes, no)
+  str_detect(s, "[4-7]")
+  # ^ means start of string, $ means end of string
+  pattern <- "^\\d$"
+  yes <- c("1", "5", "9")
+  no <- c("12", "123", " 1", "a4", "b")
+  s <- c(yes, no)
+  str_view(s, pattern)
+  
+  pattern <- "^\\d{1,2}$"
+  yes <- c("1", "5", "9", "12")
+  no <- c("123", "a4", "b")
+  str_view(c(yes, no), pattern)
+  
+  pattern <- "^[4-7]'\\d{1,2}\"$"
+  yes <- c("5'7\"", "6'2\"",  "5'12\"")
+  no <- c("6,2\"", "6.2\"","I am 5'11\"", "3'2\"", "64")
+  str_detect(yes, pattern)
+  str_detect(no, pattern)
+  
+  
+  pattern <- ","
+  yes <- c("180 cm", "70 inches")
+  no <- c("180", "70''")
+  s <- c(yes, no)
+  str_detect(s, "cm") | str_detect(s, "inches")
+  str_detect(s, "cm|inches")
+  # highlight the first occurrence of a pattern
+  str_view(s, pattern)
+  # highlight all instances of a pattern
+  str_view_all(s, pattern)
+  
+  
+  pattern_without_groups <- "^[4-7],\\d*$"
+  pattern_with_groups <-  "^([4-7]),(\\d*)$"
+  yes <- c("5,9", "5,11", "6,", "6,1")
+  no <- c("5'9", ",", "2,8", "6.1.1")
+  s <- c(yes, no)
+  
+  str_detect(s, pattern_without_groups)
+  str_detect(s, pattern_with_groups)
+  
+  str_match(s, pattern_with_groups)
+  str_extract(s, pattern_with_groups)
+  
+  
+  not_inches <- function(x, smallest = 50, tallest = 84) {
+    inches <- suppressWarnings(as.numeric(x))
+    ind <- is.na(inches) | inches < smallest | inches > tallest 
+    ind
+  }
+  
+  not_inches <- function(x, smallest = 50, tallest = 84) {
+    inches <- suppressWarnings(as.numeric(x))
+    ind <- is.na(inches) | inches < smallest | inches > tallest 
+    ind
+  }
+  
+  s <- c("70","5 ft","4'11","",".","Six feet")
+  pattern <- "\\d\\d|ft"
+  str_view_all(s, pattern)
+  
+  animals <- c("cat", "puppy", "Moose", "MONKEY")
+  pattern <- "[a-z]{4,5}"
+  str_detect(animals, pattern)
+  
+  animals <- c("moose", "monkey", "meerkat", "mountain lion")
+  pattern <- 'mo*'
+  pattern <- 'mo?'
+  pattern <- 'mo+'
+  pattern <- 'moo*'
+  str_detect(animals, pattern)
+  
+  schools <- c("U. Kentucky","Univ New Hampshire","Univ. of Massachusetts","University Georgia","U California","California State University")
+  
+  schools %>% 
+    str_replace("Univ\\.?|U\\.?", "University ") %>% 
+    str_replace("^University of |^University ", "University of ")
+  
+  schools %>% 
+    str_replace("^Univ\\.?\\s|^U\\.?\\s", "University ") %>% 
+    str_replace("^University of |^University ", "University of ")
+  
+  problems <- c("5.3", "5,5", "6 1", "5 .11", "5, 12")
+  pattern_with_groups <- "^([4-7])[,\\.](\\d*)$"
+  pattern_with_groups <- "^([4-7])[,\\.\\s](\\d*)$"
+  str_replace(problems, pattern_with_groups, "\\1'\\2")
+  
+  yes <- c("5 feet 7inches", '5 7')
+  no <- c("5ft 9 inches", "5 ft 9 inches")
+  s <- c(yes, no)
+  
+  converted <- s %>% 
+    str_replace("feet|foot|ft", "'") %>% 
+    str_replace("inches|in|''|\"", "") %>% 
+    str_replace("^([4-7])\\s*[,\\.\\s+]\\s*(\\d*)$", "\\1'\\2")
+
+  
+  pattern <- "^[4-7]\\s*'\\s*\\d{1,2}$"
+  str_detect(converted, pattern)
+  
