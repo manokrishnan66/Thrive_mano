@@ -1,5 +1,7 @@
 library(tidyverse)
+library(dslabs)
 install.packages("htmlwidgets")
+install.packages("textdata")
 getwd()
 dir <-"/R_Projects/Thrive_mano/Projects" 
 setwd(dir)
@@ -300,4 +302,209 @@ dim(dat)
   
   pattern <- "^[4-7]\\s*'\\s*\\d{1,2}$"
   str_detect(converted, pattern)
+  data(gapminder)
+  mute <- gapminder %>% filter(region=="Caribbean") %>%
+    mutate(country = recode(country, 
+                            'Antigua and Barbuda'="Barbuda",
+                            'Dominican Republic' = "DR",
+                            'St. Vincent and the Grenadines' = "St. Vincent",
+                            'Trinidad and Tobago' = "Trinidad")) %>%
+    ggplot(aes(year, life_expectancy, color = country)) +
+    geom_line()
   
+    schedule <- data.frame(day = c('Monday', 'Tuesday'), staff = c('Mandy, Chris and Laura','Steve, Ruth and Frank'))
+  
+  str_split(schedule$staff, ", | and ")
+  str_split(schedule$staff, ",\\s|\\sand\\s")
+  
+  
+  tidy <- schedule %>% 
+    mutate(staff = str_split(staff, ", | and ")) %>% 
+    unnest()
+  
+  tidy <- schedule %>% 
+    mutate(staff = str_split(staff, ", | and ", simplify = TRUE)) %>% 
+    unnest()
+  
+  library(rvest)
+  library(tidyverse)
+  library(stringr)
+  library(lubridate)
+  url <- "https://en.wikipedia.org/w/index.php?title=Opinion_polling_for_the_United_Kingdom_European_Union_membership_referendum&oldid=896735054"
+  tab <- read_html(url) %>% html_nodes("table")
+  polls <- tab[[7]] %>% html_table(fill = TRUE)
+  str(polls)
+  polls <- polls[-1,]
+  head(polls)
+  polls[[1]]
+  names(polls) <- c("dates", "remain", "leave", "undecided",  "samplesize", "pollster","notes", "poll_type", "lead")
+  str_detect(polls$undecided, 'NA')
+  polls %>% filter (str_detect(polls$remain, "%"))
+  parse_number(polls$remain)/100
+  
+  temp <- str_extract_all(polls$dates, "\\d+\\s[a-zA-Z]{3,5}")
+  end_date <- sapply(temp, function(x) x[length(x)])
+  
+  dates <- c("09-01-02", "01-12-07", "02-03-04")
+  #ymd(dates)
+  #mdy(dates)
+  dmy(dates)
+  
+  library(dslabs)
+  data(brexit_polls)
+  head(brexit_polls)
+  str(brexit_polls$startdate)
+  brexit_polls %>% filter(month(brexit_polls$startdate) ==4)
+  
+  brexit_polls %>% round_date(brexit_polls$enddate,unit = "week",week_start = getOption("lubridate.week.start",7))
+  
+  nrow(brexit_polls %>% mutate( rounded =round_date(ymd(brexit_polls$enddate), "week")) %>% filter (rounded < ymd("2016-06-13")))
+  
+  sum(round_date(brexit_polls$enddate, unit = "week") == "2016-06-12")
+  
+  brexit_polls %>% mutate(weekday = weekdays(brexit_polls$enddate, abbreviate = FALSE)) %>% filter(weekday =="Thursday")
+  
+  data(movielens)
+  
+  table(year(as_datetime(movielens$timestamp)))
+  
+  table(hour(as_datetime(movielens$timestamp)))  
+  
+  install.packages("gutenbergr")
+  install.packages("tidytext")
+  library(tidyverse)
+  library(gutenbergr)
+  library(tidytext)
+  options(digits = 3)
+  
+  head(gutenberg_metadata)
+  str(gutenberg_metadata)
+  gutenberg_metadata %>% filter (str_detect(gutenberg_metadata$title, 'Pride and Prejudice')) %>% select (gutenberg_id,title)
+  gutenberg_works(title == 'Pride and Prejudice') %>% select (gutenberg_id,title)
+  
+  
+    words <- gutenberg_download(1342) %>%
+    unnest_tokens(word, text)
+    
+    check <- words %>% anti_join(stop_words)
+     words %>% stop_words(1342)
+  
+     words %>%
+       count(word) %>%
+       top_n(1, n) %>%
+       pull(n)
+     
+  word_counts <-data.frame(words %>%
+    anti_join(stop_words, by = "word") %>%
+    count(word, sort = TRUE))
+  
+  afinn <- get_sentiments("afinn")
+  
+  afinn_sentiments <- word_counts%>%
+    inner_join(afinn)
+  
+  nrow(afinn_sentiments %>% filter(value ==4))
+  
+  
+  #---------------
+  book <- gutenberg_download(1342)
+  words <- book %>%
+    unnest_tokens(word, text)
+  
+  words <- words %>% anti_join(stop_words)
+  
+  words <- words %>%
+    filter(!str_detect(word, "\\d"))
+  
+  afinn <- get_sentiments("afinn")
+  afinn_sentiments <- words %>% inner_join(afinn, by = "word")
+  nrow(afinn_sentiments)
+  nrow(afinn_sentiments %>% filter(str_detect(afinn_sentiments$value, "\\-")))
+  nrow(afinn_sentiments %>% filter(value < 0))
+  mean(afinn_sentiments$value > 0)
+  
+  
+  
+  #-------Final assessment in Wrangling------
+  install.packages("pdftools")
+  library(tidyverse)
+  library(pdftools)
+  options(digits = 3)
+  fn <- system.file("extdata", "RD-Mortality-Report_2015-18-180531.pdf", package="dslabs")
+  system("cmd.exe", input = paste("start", fn))
+  
+  #1me11
+  #865404030660581
+  #865404030660599
+  
+  library(pdftools)
+  pdf_file <- "https://github.com/ropensci/tabulizer/raw/master/inst/examples/data.pdf"
+  txt <- pdf_text(fn)
+  str(x)
+  cat(txt[9])
+  x <- str_split(txt[9],'\n')
+  length(x)
+  
+  s <- x[[1]]
+  class(s)
+  
+  s <- str_trim(s, "both")
+  
+ 
+  header_index <- str_which(s, "2015")
+  
+  header_index <- str_which(s, "2015")[1]
+  header <- s[header_index]
+  str_split(header,'\\s{2,}',simplify=TRUE)
+  
+  tmp <- str_split(s[header_index], "\\s+", simplify = TRUE)
+  month <- tmp[1]
+  header <- tmp[-1]
+  month
+  
+  tail_index  <- str_which(s, "Total")
+  tail_index
+  
+  n <- str_count(s,"\\d+")
+  str_which(n, 1)
+  
+  
+  s <- s[-(header_index-1)]
+  
+  n <- str_count(s,"\\d+")
+  
+  s[1]
+  s[7]
+  
+  s <- s[-5]
+  s <- s[-7]
+  
+  str(s)
+  
+  out <- c(1:header_index, which(n==1), tail_index:length(s))
+  s <- s[-out]
+  length(s)
+  
+  s <- str_split_fixed(s, "\\s+", n = 6)[,1:5]
+  colnames(s) <- c('day', header)
+  class(s)
+  
+  tab <- s %>% 
+    as_data_frame() %>% 
+    setNames(c("day", header)) %>%
+    mutate_all(as.numeric)
+  mean(tab$"2015")
+  
+  tab <- tab %>% gather(year, deaths, -day) %>%
+    mutate(deaths = as.numeric(deaths))
+  tab
+  
+  tab %>% filter(!(year %in% (2018)) ) %>% ggplot(aes(day, deaths, color=year)) + 
+          geom_line() + ylim(0, 110)
+  
+  
+  tab %>% filter(year < 2018) %>% 
+    ggplot(aes(day, deaths, color = year)) +
+    geom_line() +
+    geom_vline(xintercept = 20) +
+    geom_point() + ylim(0, 110)
