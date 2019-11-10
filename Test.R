@@ -67,6 +67,15 @@ tidy_data_m <- dis_m %>%
   separate(col = key, into = c('year', 'variable_name'), sep = '_') %>% 
   spread(key = variable_name, value = value)
 
+
+data("gapminder")
+tidy_data <- gapminder %>% 
+  filter(country %in% c("South Korea", "Germany") & !is.na(fertility)) %>%
+  select(country, year, fertility)
+
+new_tidy_data <- wide_data %>%
+  gather(year, fertility, -country, convert = TRUE)
+class(new_tidy_data$year)
 dis_height <- read.csv("E:/R_Projects/Thrive_mano/Data/height.csv",stringsAsFactors = FALSE)
 tidy_data <- dis_height %>%
 separate(col = key, into = c("player", "variable_name"), sep = "_", extra = "merge")%>%
@@ -859,6 +868,7 @@ dim(dat)
   lm(W, R/G, data = Teams_small)
   
   cor(Teams_small$W, Teams_small$HR/Teams_small$G)
+  cor(16149,15840)
   
   Strata_teams %>%  
     group_by(Strata) %>% cor(HR/G, avg_attendance)
@@ -887,13 +897,14 @@ dim(dat)
     mutate(AT = attendance/G,HRG=HR/G,RG=R/G)
   
   model <- lm(AT~W+HRG+RG+yearID, data = Team_model)
-  solution_02 <- data.frame(W = 80,HRG = 1.2,RG = 5, yearID = 1960)
+  solution_02 <- data.frame(W = 80,HRG = 1.2,RG = 5, yearID = 2002)
   pred <- predict(model,solution_02)
+  pred <- predict(model,Teams_small)
   predictions <- predict(model, interval = c("confidence"), level = 0.95)
   data <- as.tibble(predictions) %>% bind_cols(daughter = female_heights)
   data %>% summarise(avg=mean(fit))
   
-  
+  cor(pred, pred_original)
   x1=80
   x2=1.2
   x3=5
@@ -906,6 +917,29 @@ dim(dat)
     do(tidy(lm(AT~W+HRG+RG+yearID,data=.))) 
   
   Teams_small2002 <- Teams %>% filter(yearID %in% 2002) %>% 
-  mutate(avg_attendance = attendance/G, R_per_game = R/G, HR_per_game = HR/G) 
-  pred_original <- predict(model, Teams_small2002)
+  mutate(AT = attendance/G,HRG=HR/G,RG=R/G) 
+  pred_original <- predict(model, Teams_small2002) 
+  cor(pred_original,Teams_small2002$AT)
+  
+  library(dslabs)
+  data("research_funding_rates")
+  Gath <- research_funding_rates %>% mutate(notawarded_men = applications_men - awards_men, notawarded_women = applications_women - awards_women) %>%
+    select(awards_men, awards_women,notawarded_men, notawarded_women)%>% 
+    #spread(awards_men, awards_women,men_not_awarded,Women_not_awarded)
+  gather (key, value)
+  
+  Sep <- Gath %>% separate(col = key, into = c('Awards', 'Gender'), sep = '_')
+  
+  Sep %>% spread(Awards, Gender) 
+  
+  
+  dat <- admissions %>% select(-applicants) %>%
+    spread(gender, admitted)
+  
+  tmp <- gather(admissions, key, value, admitted:applicants)
+  tmp
+  
+  tmp2 <- unite(tmp, column_name, c(key, gender))
+  
+  tmp2 %>%  spread(column_name, value)
   
