@@ -930,16 +930,17 @@ dim(dat)
   
   Sep <- Gath %>% separate(col = key, into = c('Awards', 'Gender'), sep = '_')
   
-  Sep %>% spread(Awards, Gender) 
+  Sep %>% group_by(Gender,Awards)%>% summarise(V = sum(value)) %>% spread(Gender, V)
   
-  
-  dat <- admissions %>% select(-applicants) %>%
-    spread(gender, admitted)
-  
-  tmp <- gather(admissions, key, value, admitted:applicants)
-  tmp
-  
-  tmp2 <- unite(tmp, column_name, c(key, gender))
-  
-  tmp2 %>%  spread(column_name, value)
-  
+  #---Site solution
+  two_by_two <- research_funding_rates %>% 
+    select(-discipline) %>% 
+    summarize_all(funs(sum)) %>%
+    summarize(yes_men = awards_men, 
+              no_men = applications_men - awards_men, 
+              yes_women = awards_women, 
+              no_women = applications_women - awards_women) %>%
+    gather %>%
+    separate(key, c("awarded", "gender")) %>%
+    spread(gender, value)
+  two_by_two
