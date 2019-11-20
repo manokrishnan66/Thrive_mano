@@ -930,7 +930,9 @@ dim(dat)
   
   Sep <- Gath %>% separate(col = key, into = c('Awards', 'Gender'), sep = '_')
   
-  Sep %>% group_by(Gender,Awards)%>% summarise(V = sum(value)) %>% spread(Gender, V)
+  final <- Sep %>% group_by(Gender,Awards)%>% summarise(V = sum(value)) %>% spread(Gender, V)
+  
+  chisq_test <- final %>% select(-Awards) %>% chisq.test() 
   
   #---Site solution
   two_by_two <- research_funding_rates %>% 
@@ -940,7 +942,176 @@ dim(dat)
               no_men = applications_men - awards_men, 
               yes_women = awards_women, 
               no_women = applications_women - awards_women) %>%
-    gather %>%
+    
+    dat <- research_funding_rates %>% 
+    mutate(discipline = reorder(discipline, success_rates_total)) %>%
+    rename(success_total = success_rates_total,
+           success_men = success_rates_men,
+           success_women = success_rates_women) %>%
+    gather(key, value, -discipline) %>%
+    separate(key, c("type", "gender")) %>%
+    spread(type, value) %>%
+    filter(gender != "total")
+  dat %>% ggplot(aes(discipline, success, fill = discipline)) + geom_bar(stat = "Identity") + facet_grid(.~gender)
+  dat %>% pull(max(success))
+  dat%>% group_by(discipline) %>% summarise(S = sum(success)) %>% arrange(desc(S))
+    
     separate(key, c("awarded", "gender")) %>%
     spread(gender, value)
   two_by_two
+  
+  #------Machine Learning-----------------
+  
+  library(dslabs)
+  
+  s <- read_mnist()
+  
+  str(s)
+  ncol(s$train$images)
+  ncol()
+  mnist
+  
+  ncol(mnist)
+  
+  
+  library(dslabs)
+  library(dplyr)
+  library(lubridate)
+  library(tidyverse)
+  install.packages('caret')
+  library(caret)
+  data("reported_heights")
+  
+  dat <- mutate(reported_heights, date_time = ymd_hms(time_stamp)) %>%
+    filter(date_time >= make_date(2016, 01, 25) & date_time < make_date(2016, 02, 1)) %>%
+    mutate(type = ifelse(day(date_time) == 25 & hour(date_time) == 8 & between(minute(date_time), 15, 30), "inclass","online")) %>%
+    select(sex, type)
+  
+  y <- factor(dat$sex, c("Female", "Male"))
+  x <- dat$type
+  
+  inc <- nrow(dat %>% filter(type =='inclass'))
+  inc_f <-nrow(dat %>% filter(type =='inclass' & sex == 'Female')) 
+  inc_f/inc
+  
+  onc <- nrow(dat %>% filter(sex == 'Female'))
+  
+  
+  
+  onc_f <-nrow(dat %>% filter(type =='online' & sex == 'Female')) 
+  onc_f/onc
+  x
+  
+  dat %>% group_by(type) %>% summarize(prop_female = mean(sex == "Female"))
+  
+  # maximize F-score
+  cutoff <- c('online','inclass')
+  F_1 <- map_dbl(cutoff, function(x1){
+    y_hat <- ifelse(x=='online', "Male", "Female") %>% 
+      factor(levels = levels(dat$sex))
+    mean(y_hat == dat$sex)
+  })
+  max(F_1)
+  
+  y %>% filter(y == 'Male')
+  
+  
+  y_hat <- ifelse(x == "online", "Male", "Female") %>% 
+    factor(levels = levels(y))
+  mean(y_hat==y)
+  
+  table(predicted = y_hat, actual = dat$sex)
+  table(y_hat, y)
+  
+  sensitivity(y_hat,dat$sex)
+  sensitivity(data = y_hat, reference = y)
+  specificity(data = y_hat, reference = y)
+  
+  
+  
+  test_set %>% 
+    mutate(y_hat = y_hat) %>%
+    group_by(sex) %>% 
+    summarize(accuracy = mean(y_hat == sex))
+  prev <- mean(y == "Male")
+  
+  confusionMatrix(data = y_hat, reference = test_set$sex)
+  
+  
+  
+  library(caret)
+  data(iris)
+  iris <- iris[-which(iris$Species=='setosa'),]
+  y <- iris$Species
+  
+  test_index <- createDataPartition(y, times = 1, p = 0.5, list = FALSE)
+  
+  set.seed(2)    # if using R 3.6 or later, use set.seed(2, sample.kind="Rounding")
+  # line of code
+  test_index <- createDataPartition(y, times = 1, p = 0.5, list = FALSE)
+  test <- iris[test_index,]
+  train <- iris[-test_index,]
+  
+  
+  c <- seq(min(train$Sepal.Width),max(train$Sepal.Width),0.1)
+  accuracy <- map_dbl(c,function(x){ 
+    y_hat <- ifelse(train$Sepal.Width > x,"virginica","versicolor") %>%
+      factor(levels = levels(train$Species))
+  mean(y_hat==train$Species,reference = factor(train$Species))
+  })
+  
+  max(accuracy)
+  
+  #sepal.width - 0.64
+  
+  c_sl <- seq(min(train$Sepal.Length),max(train$Sepal.Length),0.1)
+  accuracy_sl <- map_dbl(c_sl,function(x){ 
+    y_hat_sl <- ifelse(train$Sepal.Length > x,"virginica","versicolor") %>%
+      factor(levels = levels(train$Species))
+    mean(y_hat_sl==train$Species,reference = factor(train$Species))
+  })
+  
+  max(accuracy_sl)
+  
+  #sepal.length - 0.5
+  
+  c_pl <- seq(min(train$Petal.Length),max(train$Petal.Length),0.1)
+  accuracy_pl <- map_dbl(c_pl,function(x){ 
+    y_hat_pl <- ifelse(train$Petal.Length > x,"virginica","versicolor") %>%
+      factor(levels = levels(train$Species))
+    mean(y_hat_pl==train$Species,reference = factor(train$Species))
+  })
+  
+  max(accuracy_pl)
+  
+  #Petal.Length - 0.56
+  
+  c_pw <- seq(min(train$Petal.Width),max(train$Petal.Width),0.1)
+  accuracy_pw <- map_dbl(c_pw,function(x){ 
+    y_hat_pw <- ifelse(train$Petal.Width > x,"virginica","versicolor") %>%
+      factor(levels = levels(train$Species))
+    mean(y_hat_pw==train$Species,reference = factor(train$Species))
+  })
+  
+  max(accuracy_pw)
+  
+  #Petal.width - 0.56 
+  
+  foo <- function(x){
+    rangedValues <- seq(range(x)[1],range(x)[2],by=0.1)
+    sapply(rangedValues,function(i){
+      y_hat <- ifelse(x>i,'virginica','versicolor')
+      mean(y_hat==train$Species)
+    })
+  }
+  predictions <- apply(train[,-5],2,foo)
+  sapply(predictions,max)	
+  
+  best_cutoff <- c_pw[which.max(accuracy_pw)]
+  best_cutoff
+  y_hat_pw <- ifelse(test$Petal.Width > best_cutoff,"virginica","versicolor") %>%
+    factor(levels = levels(test$Species))
+  #y_hat <- ifelse(test_set$height > best_cutoff, "Male", "Female") %>% 
+   # factor(levels = levels(test_set$sex))
+  y_hat_pw <- factor(y_hat_pw)
+  mean(y_hat_pw==test$Species)
