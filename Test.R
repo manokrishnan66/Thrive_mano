@@ -1107,6 +1107,14 @@ dim(dat)
   predictions <- apply(train[,-5],2,foo)
   sapply(predictions,max)	
   
+  predictions <- foo(train[,3])
+  rangedValues <- seq(range(train[,3])[1],range(train[,3])[2],by=0.1)
+  cutoffs <-rangedValues[which(predictions==max(predictions))]
+  
+  y_hat <- ifelse(test[,3]>cutoffs[1],'virginica','versicolor')
+  mean(y_hat==test$Species)
+  
+  
   best_cutoff <- c_pw[which.max(accuracy_pw)]
   best_cutoff
   y_hat_pw <- ifelse(test$Petal.Width > best_cutoff,"virginica","versicolor") %>%
@@ -1115,3 +1123,222 @@ dim(dat)
    # factor(levels = levels(test_set$sex))
   y_hat_pw <- factor(y_hat_pw)
   mean(y_hat_pw==test$Species)
+  
+  
+  plot(iris,pch=21,bg=iris$Species)
+  
+  best_cutoff_pw <- c_pw[which.max(accuracy_pw)]
+  best_cutoff_pl <- c_pl[which.max(accuracy_pl)]
+  y_hat_pwpl <- ifelse(test$Petal.Width > best_cutoff_pw | test$Petal.Length > best_cutoff_pl ,"virginica","versicolor") %>%
+    factor(levels = levels(test$Species))
+  mean(y_hat_pwpl==test$Species)
+  
+  #---COnditional Probablity
+  
+  p_testpos_disease <- 0.85
+  p_testneg_healthy <- 0.90
+  p_testpos_healthy <- 0.10
+  p_disease <- 0.02
+  p_disease_testpos <- p_testpos_disease * p_disease / (p_testpos_healthy)
+  p_disease * p_testneg_healthy /p_testpos_disease
+  
+  set.seed(1)
+  disease <- sample(c(0,1), size=1e6, replace=TRUE, prob=c(0.98,0.02))
+  test <- rep(NA, 1e6)
+  test[disease==0] <- sample(c(0,1), size=sum(disease==0), replace=TRUE, prob=c(0.90,0.10))
+  test[disease==1] <- sample(c(0,1), size=sum(disease==1), replace=TRUE, prob=c(0.15, 0.85))
+  
+  mean(1- (test[disease==1]))
+  mean(disease[test==0])
+  mean(disease[test==1]==1)/mean(disease==1)
+  
+  library(dslabs)
+  data("heights")
+  heights %>% 
+    mutate(height = round(height)) %>%
+    group_by(height) %>%
+    summarize(p = mean(sex == "Male")) %>%
+  qplot(height, p, data =.)
+  
+  
+  ps <- seq(0, 1, 0.1)
+  heights %>% 
+    mutate(g = cut(height, quantile(height, ps), include.lowest = TRUE)) %>%
+  group_by(g) %>%
+    summarize(p = mean(sex == "Male"), height = mean(height)) %>%
+    qplot(height, p, data =.)
+  
+  
+  Sigma <- 9*matrix(c(1,0.5,0.5,1), 2, 2)
+  dat <- MASS::mvrnorm(n = 10000, c(69, 69), Sigma) %>%
+    data.frame() %>% setNames(c("x", "y"))
+  
+  ps <- seq(0, 1, 0.1)
+  dat %>% 
+    mutate(g = cut(x, quantile(x, ps), include.lowest = TRUE)) %>%
+    group_by(g) %>%
+    summarize(y = mean(y), x = mean(x)) %>%
+  qplot(x, y, data =.)
+  
+  #---Regression
+  
+  set.seed(1) # set.seed(1, sample.kind="Rounding") if using R 3.6 or later
+  n <- 100
+  Sigma <- 9*matrix(c(1.0, 0.5, 0.5, 1.0), 2, 2)
+  dat <- MASS::mvrnorm(n = 100, c(69, 69), Sigma) %>%
+    data.frame() %>% setNames(c("x", "y"))
+ 
+  set.seed(1)
+  rmse <- replicate(100, {
+    test_index <- createDataPartition(dat$y, times = 1, p = 0.5, list = FALSE)
+  train_set <- dat %>% slice(-test_index)
+  test_set <- dat %>% slice(test_index)
+    fit <- lm(y ~ x, data = train_set)
+  y_hat <- predict(fit, newdata = test_set)
+  sqrt(mean((y_hat-test_set$y)^2))
+  #sqrt(mean((y_hat-test_set$y)^2))
+    })
+  mean(rmse)
+  sd(rmse)
+    set.seed(1)    # if R 3.6 or later, set.seed(1, sample.kind="Rounding")
+  rmse <- replicate(100, {
+    test_index <- createDataPartition(dat$y, times = 1, p = 0.5, list = FALSE)
+    train_set <- dat %>% slice(-test_index)
+    test_set <- dat %>% slice(test_index)
+    fit <- lm(y ~ x, data = train_set)
+    y_hat <- predict(fit, newdata = test_set)
+    sqrt(mean((y_hat-test_set$y)^2))
+  })
+  
+  mean(rmse)
+  sd(rmse)
+  
+  
+  set.seed(1) # set.seed(1, sample.kind="Rounding") if using R 3.6 or later
+
+  
+  set.seed(1)
+
+    #n <- 100
+  n <- c(100, 500, 1000, 5000, 10000)
+  Sigma <- 9*matrix(c(1.0, 0.5, 0.5, 1.0), 2, 2)
+  sapply(n, function(i){
+
+    dat <- MASS::mvrnorm(n=n, c(69, 69), Sigma) %>%
+      data.frame() %>% setNames(c("x", "y"))
+    rmse <- replicate(100, {
+        test_index <- createDataPartition(dat$y, times = 1, p = 0.5, list = FALSE)
+    train_set <- dat %>% slice(-test_index)
+    test_set <- dat %>% slice(test_index)
+    fit <- lm(y ~ x, data = train_set)
+    y_hat <- predict(fit, newdata = test_set)
+    sqrt(mean((y_hat-test_set$y)^2))
+    #sqrt(mean((y_hat-test_set$y)^2))
+  })
+  mean(rmse)
+  sd(rmse)
+  })
+  
+  set.seed(1)
+  set.seed(1, sample.kind="Rounding")
+  res1 <- function(n){
+    Sigma1 <- 9*matrix(c(1.0, 0.5, 0.5, 1.0), 2, 2)
+    dat1 <- MASS::mvrnorm(n, c(69, 69), Sigma1) %>% 
+      data.frame() %>% setNames(c("x", "y"))
+    rmse1 <- replicate(100, {
+      test_index1 <- createDataPartition(dat1$y, times = 1, p = 0.5, list = FALSE)
+      train_set1 <- dat1 %>% slice(-test_index1)
+      test_set1 <- dat1 %>% slice(test_index1)
+      fit1 <- lm(y ~ x, data = train_set1)
+      y_hat1 <- predict(fit1, newdata = test_set1)
+      sqrt(mean((y_hat1-test_set1$y)^2))
+      #sqrt(mean((y_hat-test_set$y)^2))
+    }) 
+    result <- c(round(n, digits=3),round(mean(rmse1), digits=3),round(sd(rmse1), digits=3))
+  }
+  
+  
+  n <- c(100, 500, 1000, 5000, 10000)
+  res_n1 <- sapply(n, res1)
+  
+  res_n1
+  
+  round(123.456, digits=2)
+  
+  # Question 4
+  
+  set.seed(1)
+  n <- 100
+  Sigma <- 9*matrix(c(1.0, 0.95, 0.95, 1.0), 2, 2)
+  dat <- MASS::mvrnorm(n = 100, c(69, 69), Sigma) %>%
+    data.frame() %>% setNames(c("x", "y"))
+  
+  set.seed(1, sample.kind="Rounding")
+  rmse <- replicate(100, {
+    test_index <- createDataPartition(dat$y, times = 1, p = 0.5, list = FALSE)
+    train_set <- dat %>% slice(-test_index)
+    test_set <- dat %>% slice(test_index)
+    fit <- lm(y ~ x, data = train_set)
+    y_hat <- predict(fit, newdata = test_set)
+    sqrt(mean((y_hat-test_set$y)^2))
+    #sqrt(mean((y_hat-test_set$y)^2))
+  })
+  mean(rmse)
+  sd(rmse)
+  
+  
+  # Question 5
+  
+  set.seed(1)
+  Sigma2 <- matrix(c(1.0, 0.75, 0.75, 0.75, 1.0, 0.25, 0.75, 0.25, 1.0), 3, 3)
+  dat2 <- MASS::mvrnorm(n = 100, c(0, 0, 0), Sigma2) %>%
+    data.frame() %>% setNames(c("y", "x_1", "x_2"))
+  
+  set.seed(1, sample.kind="Rounding")
+  rmse2 <- replicate(100, {
+    test_index2 <- createDataPartition(dat2$y, times = 1, p = 0.5, list = FALSE)
+    train_set2 <- dat2 %>% slice(-test_index2)
+    test_set2 <- dat2 %>% slice(test_index2)
+    fit2 <- lm(y ~ x_2, data = train_set2)
+    y_hat2 <- predict(fit2, newdata = test_set2)
+    sqrt(mean((y_hat2-test_set2$y)^2))
+    #sqrt(mean((y_hat-test_set$y)^2))
+  })
+  mean(rmse2)
+  sd(rmse2)
+  
+  set.seed(1)
+  Sigma <- matrix(c(1.0, 0.75, 0.75, 0.75, 1.0, 0.95, 0.75, 0.95, 1.0), 3, 3)
+  dat <- MASS::mvrnorm(n = 100, c(0, 0, 0), Sigma) %>%
+    data.frame() %>% setNames(c("y", "x_1", "x_2"))
+  
+  set.seed(1)
+  test_index <- createDataPartition(dat$y, times = 1, p = 0.5, list = FALSE)
+  train_set <- dat %>% slice(-test_index)
+  test_set <- dat %>% slice(test_index)
+  
+  fit <- lm(y ~ x_2, data = train_set)
+  y_hat <- predict(fit, newdata = test_set)
+  sqrt(mean((y_hat-test_set$y)^2))
+  
+  
+  #y ~ x_1 + x_2
+  #   mean(rmse2)
+  # 0.3450927 -----0.6597865
+  #   sd(rmse2)
+  # 0.02475961
+  
+  
+  #y ~ x_1
+  #   mean(rmse2)
+  # 0.6369011 ------0.6592608
+  #   sd(rmse2)
+  # 0.04133126
+  
+  
+  #y ~ x_2
+  #   mean(rmse2)
+  # 0.6515611  ----------0.6400
+  #   sd(rmse2)
+  # 0.03701591
+  
