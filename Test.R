@@ -1342,3 +1342,126 @@ dim(dat)
   #   sd(rmse2)
   # 0.03701591
   
+  
+  #Logistic Regression
+  
+  set.seed(2) #if you are using R 3.5 or earlier
+  set.seed(2, sample.kind="Rounding") #if you are using R 3.6 or later
+  make_data <- function(n = 1000, p = 0.5, 
+                        mu_0 = 0, mu_1 = 2, 
+                        sigma_0 = 1,  sigma_1 = 1){
+    
+    y <- rbinom(n, 1, p)
+    f_0 <- rnorm(n, mu_0, sigma_0)
+    f_1 <- rnorm(n, mu_1, sigma_1)
+    x <- ifelse(y == 1, f_1, f_0)
+    
+    test_index <- createDataPartition(y, times = 1, p = 0.5, list = FALSE)
+    
+    list(train = data.frame(x = x, y = as.factor(y)) %>% slice(-test_index),
+         test = data.frame(x = x, y = as.factor(y)) %>% slice(test_index))
+  }
+  dat <- make_data()
+  
+  dat$train %>% ggplot(aes(x, color = y)) + geom_density()
+  
+  install.packages("e1071")
+  
+  set.seed(1, sample.kind="Rounding")
+  make_data <- function(n = 1000, p = 0.5, 
+                        mu_0 = 0, mu_1 = seq(0, 3, len=25), 
+                        sigma_0 = 1,  sigma_1 = 1){
+    
+    y <- rbinom(n, 1, p)
+    f_0 <- rnorm(n, mu_0, sigma_0)
+    f_1 <- rnorm(n, mu_1, sigma_1)
+    x <- ifelse(y == 1, f_1, f_0)
+    
+    test_index <- createDataPartition(y, times = 1, p = 0.5, list = FALSE)
+    
+    list(train = data.frame(x = x, y = as.factor(y)) %>% slice(-test_index),
+         test = data.frame(x = x, y = as.factor(y)) %>% slice(test_index))
+  }
+  dat <- make_data()
+  #dat$train
+  
+  # fit logistic regression model
+  glm_fit <- dat$train %>% 
+    glm(y ~ x, data=., family = "binomial")
+  p_hat_logit <- predict(glm_fit, newdata = dat$test, type = "response")
+  y_hat_logit <- ifelse(p_hat_logit > 0.5, 1, 0) %>% factor
+  confusionMatrix(y_hat_logit, dat$test$y)$overall[["Accuracy"]] %>%
+    ggplot(aes(Accuracy,mu_1, color = )) + geom_point()
+  
+  set.seed(1) #if you are using R 3.5 or earlier
+  set.seed(1, sample.kind="Rounding") #if you are using R 3.6 or later
+  delta <- seq(0, 3, len = 25)
+  res <- sapply(delta, function(d){
+    dat <- make_data(mu_1 = d)
+    fit_glm <- dat$train %>% glm(y ~ x, family = "binomial", data = .)
+    y_hat_glm <- ifelse(predict(fit_glm, dat$test) > 0.5, 1, 0) %>% factor(levels = c(0, 1))
+    mean(y_hat_glm == dat$test$y)
+  })
+  qplot(delta, res)
+  
+  #Smoothing--------------------
+  
+  library(tidyverse)
+  library(lubridate)
+  library(purrr)
+  library(pdftools)
+  
+  fn <- system.file("extdata", "RD-Mortality-Report_2015-18-180531.pdf", package="dslabs")
+  dat <- map_df(str_split(pdf_text(fn), "\n"), function(s){
+    s <- str_trim(s)
+    header_index <- str_which(s, "2015")[1]
+    tmp <- str_split(s[header_index], "\\s+", simplify = TRUE)
+    month <- tmp[1]
+    header <- tmp[-1]
+    tail_index  <- str_which(s, "Total")
+    n <- str_count(s, "\\d+")
+    out <- c(1:header_index, which(n==1), which(n>=28), tail_index:length(s))
+    s[-out] %>%
+      str_remove_all("[^\\d\\s]") %>%
+      str_trim() %>%
+      str_split_fixed("\\s+", n = 6) %>%
+      .[,1:5] %>%
+      as_data_frame() %>% 
+      setNames(c("day", header)) %>%
+      mutate(month = month,
+             day = as.numeric(day)) %>%
+      gather(year, deaths, -c(day, month)) %>%
+      mutate(deaths = as.numeric(deaths))
+  }) %>%
+    mutate(month = recode(month, "JAN" = 1, "FEB" = 2, "MAR" = 3, "APR" = 4, "MAY" = 5, "JUN" = 6, 
+                          "JUL" = 7, "AGO" = 8, "SEP" = 9, "OCT" = 10, "NOV" = 11, "DEC" = 12)) %>%
+    mutate(date = make_date(year, month, day)) %>%
+    filter(date <= "2018-05-01")
+  
+  span <- 60 / as.numeric(diff(range(dat$date)))
+  fit <- dat %>% mutate(x = as.numeric(date)) %>% loess(deaths ~ x, data = ., span = span, degree = 1)
+  dat %>% mutate(smooth = predict(fit, as.numeric(date))) %>%
+    ggplot() +
+    geom_point(aes(date, deaths)) +
+    geom_line(aes(date, smooth), lwd = 2, col = 2)
+  
+  
+  library(dslabs)
+  library(tidyverse)
+  library(broom)
+  data("mnist_27")
+  mn <- mnist_27$train %>% glm(y ~ x_2, family = "binomial", data = .) %>% tidy()
+  
+  qplot(x_2, y, data = mnist_27$train)
+  mnist_27$train <- mnist_27$train %>% mutate(y = ifelse(y == 7, 1, 0))
+  fit <- mnist_27$train %>% loess(y  ~ x_2, data = ., degree = 1)
+  mnist_27$train %>% mutate(smooth = predict(fit, x_2)) %>%
+    ggplot() +
+    geom_point(aes(x_2, y)) +
+    geom_line(aes(x_2, smooth), lwd = 2, col = 2)
+  
+  mnist_27$train %>% 
+    #mutate(y = ifelse(y=="7", 1, 0)) %>%
+    ggplot(aes(x_2, y)) + 
+    geom_smooth(method = "loess")
+  
