@@ -1464,4 +1464,151 @@ dim(dat)
     #mutate(y = ifelse(y=="7", 1, 0)) %>%
     ggplot(aes(x_2, y)) + 
     geom_smooth(method = "loess")
+
+  #Matrices
   
+  x <- matrix(rnorm(100*10), 100, 10)
+  dim(x)
+  nrow(x)
+  ncol(x)
+  
+  y <- 1:10
+  y <- matrix(y,5,2)
+  sweep(y,2,)
+  
+  sweep(y, 1, 1:nrow(y),"+")
+  
+  1:nrow(y)
+  
+  y + seq(nrow(y))
+  
+  1:ncol(y)
+  1:col(y)
+  sweep(y, 2, 1:ncol(y), FUN = "+")
+  
+  y
+  rowMeans(y)
+  
+  sapply(y,mean)
+  
+  library(tidyverse)
+  library(dslabs)
+  if(!exists("mnist")) mnist <- read_mnist()
+  
+  class(mnist$train$images)
+  
+  mnist$train$images > 50
+  
+  view(mnist$train$images >50 & (mnist$train$images <250))
+  
+  mnist <- read_mnist()
+  y <- rowMeans(mnist$train$images>50 & mnist$train$images<205)
+  qplot(as.factor(mnist$train$labels), y, geom = "boxplot")
+  
+  #-----------------Distance
+  
+  library(dslabs)
+  data("tissue_gene_expression")
+  dim(tissue_gene_expression$x)
+  nrow(tissue_gene_expression$x)
+  table(tissue_gene_expression$y)
+  
+  
+  d <- dist(tissue_gene_expression$x)
+  
+  sqrt(crossprod(tissue_gene_expression$x[1,] - tissue_gene_expression$x[2,]))
+  
+  
+  if(!exists("mnist")) mnist <- read_mnist()
+  set.seed(1995) # if using R 3.5 or earlier
+  set.seed(1995) # if using R 3.6 or later
+  ind <- which(mnist$train$labels %in% c(2,7)) %>% sample(500)
+  
+  #the predictors are in x and the labels in y
+  x <- mnist$train$images[ind,]
+  y <- mnist$train$labels[ind]
+  y[1:3]
+  x_1 <- x[1,]
+  x_2 <- x[2,]
+  x_3 <- x[3,]
+  
+  #distance between two numbers
+  sqrt(sum((x_1 - x_2)^2))
+  sqrt(sum((x_1 - x_3)^2))
+  sqrt(sum((x_2 - x_3)^2))
+  
+  #compute distance using matrix algebra
+  sqrt(crossprod(x_1 - x_2))
+  sqrt(crossprod(x_1 - x_3))
+  sqrt(crossprod(x_2 - x_3))
+  
+  #compute distance between each row
+  d <- dist(x)
+  class(d)
+  as.matrix(d)[1:3,1:3]
+  
+  #visualize these distances
+  image(as.matrix(d))
+  
+  #order the distance by labels
+  image(as.matrix(d)[order(y), order(y)])
+  
+  #compute distance between predictors
+  d <- dist(t(x))
+  dim(as.matrix(d))
+  d_492 <- as.matrix(d)[492,]
+  image(1:28, 1:28, matrix(d_492, 28, 28))
+  
+  sqrt(crossprod(tissue_gene_expression$x[1,] - tissue_gene_expression$x[2,]))
+  image(as.matrix(d)[c(73,74), c(73,74)])
+  
+  image(as.matrix(d)[c(1,2,39,40,73,74), c(1,2,39,40,73,74)])
+  
+  library(dslabs)
+  data("heights")
+  y <- heights$sex
+  
+  set.seed(1) #if you are using R 3.5 or earlier
+  set.seed(1, sample.kind = "Rounding") #if you are using R 3.6 or later
+  
+  test_index <- createDataPartition(y, times = 1, p = 0.5, list = FALSE)
+  train_set <- heights %>% slice(-test_index)
+  test_set <- heights %>% slice(test_index)
+  
+  glm_fit <- train_set %>% 
+    mutate(y = as.numeric(sex == "Female")) %>%
+    glm(y ~ height, data=., family = "binomial")
+  p_hat_logit <- predict(glm_fit, newdata = test_set, type = "response")
+  y_hat_logit <- ifelse(p_hat_logit > 0.5, "Female", "Male") %>% factor
+  confusionMatrix(y_hat_logit, test_set$sex)$overall[["Accuracy"]]
+  
+  knn_fit <- knn3(y ~ height, data = mnist_27$train)
+  x <- as.matrix(mnist_27$train[,2:3])
+  y <- mnist_27$train$y
+  knn_fit <- knn3(x, y)
+  knn_fit <- knn3(y ~ ., data = mnist_27$train, k=5)
+  y_hat_knn <- predict(knn_fit, mnist_27$test, type = "class")
+  confusionMatrix(data = y_hat_knn, reference = mnist_27$test$y)$overall["Accuracy"]
+  
+  ks <- seq(1, 101, 3)
+  library(purrr)
+  accuracy <- map_df(ks, function(k){
+    fit <-train_set %>% 
+          knn3(sex ~ height, data=., k = k)
+    y_hat <- predict(fit,train_set , type = "class")
+    y_hat
+    cm_train <- confusionMatrix(data = y_hat, reference = train_set$sex)
+    train_error <- cm_train$overall["Accuracy"]
+    y_hat <- predict(fit, test_set, type = "class")
+    cm_test <- confusionMatrix(data = y_hat, reference = test_set$sex)
+    test_error <- cm_test$overall["Accuracy"]
+    F_1 <- F_meas(data = y_hat, reference = test_set$sex)
+    
+    tibble(F_1,train = train_error, test = test_error)
+  })
+  
+
+#pick the k that maximizes accuracy using the estimates built on the test data
+ks[which.max(accuracy$test)]
+max(accuracy$test)
+max(accuracy$F_1)
