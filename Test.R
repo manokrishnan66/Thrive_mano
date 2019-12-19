@@ -1,6 +1,7 @@
 library(tidyverse)
 library(dslabs)
 library(broom)
+library(caret)
 install.packages("htmlwidgets")
 install.packages("textdata")
 getwd()
@@ -1612,3 +1613,84 @@ dim(dat)
 ks[which.max(accuracy$test)]
 max(accuracy$test)
 max(accuracy$F_1)
+
+#---------Following question------------
+
+library(dslabs)
+data("tissue_gene_expression")
+
+ 
+
+
+set.seed(1) #if you are using R 3.5 or earlier
+set.seed(1, sample.kind = "Rounding") #if you are using R 3.6 or later
+
+test_index <- createDataPartition(tissue_gene_expression$y, times = 1, p = 0.5, list = FALSE)
+train_set_x <- tissue_gene_expression$x[-test_index,]
+train_set_y <- tissue_gene_expression$y[-test_index]
+test_set_x <- tissue_gene_expression$x[test_index,]
+test_set_y <- tissue_gene_expression$y[test_index]
+
+trainset_gene <- list('x' = train_set_x, 'y' = train_set_y)
+testset_gene <- list('x' = test_set_x, 'y' = test_set_y)
+
+ks <- c(1,3, 5, 7, 9, 11)
+library(purrr)
+accuracy <- map_df(ks, function(k){
+  fit <- knn3(trainset_gene$y ~ trainset_gene$x, data=trainset_gene, k = k)
+  y_hat <- predict(fit,testset_gene , type = "class")
+  cm_test <- confusionMatrix(data = y_hat, reference = testset_gene$y)
+  test_error <- cm_test$overall["Accuracy"]
+  tibble(test = test_error)
+})
+
+ks[which.max(accuracy$test)]
+max(accuracy$test)
+
+
+length(y_hat)
+length(trainset_gene$y)
+length(testset_gene$y)
+length(tissue_gene_expression$y)
+
+
+#------following question ends---------------
+  if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+  BiocManager::install("genefilter")
+  library(genefilter)
+  tt <- colttests(x,y)
+  tt <- colttests(x_subset, y)
+pvals <- tt$p.value
+
+colttests(x, fac, tstatOnly = FALSE)
+
+set.seed(1996)
+n <- 1000
+p <- 10000
+x <- matrix(rnorm(n*p), n, p)
+colnames(x) <- paste("x", 1:ncol(x), sep = "_")
+y <- rbinom(n, 1, 0.5) %>% factor()
+
+pvals <- tt$CORRECT.ANSWER
+
+set.seed(1995,sample.kind="Rounding")
+indexes <- createResample(mnist_27$train$y, 10)
+
+mnist_27$train$y[indexes$Resample01]
+
+sum(indexes[[1]] == 3)
+sum(indexes[[2]] == 3)
+sum(indexes[[3]] == 3)
+sum(indexes[[4]] == 3)
+sum(indexes[[5]] == 3)
+sum(indexes[[6]] == 3)
+sum(indexes[[7]] == 3)
+sum(indexes[[8]] == 3)
+sum(indexes[[9]] == 3)
+sum(indexes[[10]] == 3)
+
+x=sapply(indexes, function(ind){
+  sum(ind == 3)
+})
+sum(x)
