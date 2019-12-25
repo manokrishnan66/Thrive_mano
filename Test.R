@@ -1694,3 +1694,255 @@ x=sapply(indexes, function(ind){
   sum(ind == 3)
 })
 sum(x)
+
+
+y <- rnorm(100, 0, 1)
+
+
+set.seed(1)
+B <- 10^4
+N <- 100
+y_starfull <- replicate(B, {
+  y <- rnorm(100, 0, 1)
+  #set.seed(1, sample.kind="Rounding")
+  #y_star <- sample(y, N, replace = TRUE)
+  quantile(y, 0.75)
+})
+mean(y_starfull)
+sd(y_starfull)
+
+
+set.seed(1995,sample.kind="Rounding")
+indexes <- createResample(mnist_27$train$y, 10)
+
+mnist_27$train$y[indexes$Resample01]
+
+set.seed(1)
+y <- rnorm(100, 0, 1)
+set.seed(1)
+indexes <- createResample(y, 10000)
+quantile(y, 0.75)
+
+
+x=sapply(indexes, function(ind){
+  quantile(y[ind], 0.75)
+})
+mean(x)
+sd(x)
+
+library(dslabs)
+library(caret)
+data("tissue_gene_expression")
+
+
+set.seed(1993)
+ind <- which(tissue_gene_expression$y %in% c("cerebellum", "hippocampus"))
+y <- droplevels(tissue_gene_expression$y[ind])
+x <- tissue_gene_expression$x[ind, ]
+x <- x[, sample(ncol(x), 10)]
+
+train_lda <- train(x, y, method = "lda")
+
+train_lda <- train(x, y, method = "lda", preProcess = "center")
+train_qda <- train(x, y, method = "qda")
+
+str(train_lda$finalModel$means)
+
+t(train_lda$finalModel$means) %>% data.frame() %>%
+  mutate(predictor_name = rownames(.)) %>%
+  ggplot(aes(cerebellum, hippocampus, label = predictor_name)) +
+  geom_point() +
+  geom_text() +
+  geom_abline()
+
+
+t(train_lda$finalModel$means) %>% data.frame() %>%
+  mutate(predictor_name = rownames(.)) %>%
+  ggplot(aes(predictor_name, hippocampus)) +
+  geom_point() +
+  coord_flip()
+
+d <- apply(train_lda$finalModel$means, 2, diff)
+ind <- order(abs(d), decreasing = TRUE)[1:2]
+plot(x[, ind], col = y)
+
+data("tissue_gene_expression")
+set.seed(1993) #set.seed(1993, sample.kind="Rounding") if using R 3.6 or later
+y <- tissue_gene_expression$y
+x <- tissue_gene_expression$x
+x <- x[, sample(ncol(x), 10)]
+
+train_lda <- train(x, y, method = "lda", preProcess = "center")
+
+#CART
+
+# Load data
+library(tidyverse)
+library(dslabs)
+data("olive")
+olive %>% as_tibble()
+table(olive$region)
+olive <- select(olive, -area)
+
+# Predict region using KNN
+library(caret)
+fit <- train(region ~ .,  method = "knn", 
+             tuneGrid = data.frame(k = seq(1, 15, 2)), 
+             data = olive)
+ggplot(fit)
+
+# Plot distribution of each predictor stratified by region
+olive %>% gather(fatty_acid, percentage, -region) %>%
+  ggplot(aes(region, percentage, fill = region)) +
+  geom_boxplot() +
+  facet_wrap(~fatty_acid, scales = "free") +
+  theme(axis.text.x = element_blank())
+
+# plot values for eicosenoic and linoleic
+p <- olive %>% 
+  ggplot(aes(eicosenoic, linoleic, color = region)) + 
+  geom_point()
+p + geom_vline(xintercept = 0.065, lty = 2) + 
+  geom_segment(x = -0.2, y = 10.54, xend = 0.065, yend = 10.54, color = "black", lty = 2)
+
+# load data for regression tree
+data("polls_2008")
+qplot(day, margin, data = polls_2008)
+
+library(rpart)
+fit <- rpart(margin ~ ., data = polls_2008)
+
+# visualize the splits 
+plot(fit, margin = 0.1)
+text(fit, cex = 0.75)
+polls_2008 %>% 
+  mutate(y_hat = predict(fit)) %>% 
+  ggplot() +
+  geom_point(aes(day, margin)) +
+  geom_step(aes(day, y_hat), col="red")
+
+# change parameters
+fit <- rpart(margin ~ ., data = polls_2008, control = rpart.control(cp = 0, minsplit = 2))
+
+
+polls_2008 %>% 
+  mutate(y_hat = predict(fit)) %>% 
+  ggplot() +
+  geom_point(aes(day, margin)) +
+  geom_step(aes(day, y_hat), col="red")
+
+# use cross validation to choose cp
+library(caret)
+train_rpart <- train(margin ~ .,method = "rpart",tuneGrid = data.frame(cp = seq(0, 0.05, len = 25)),data = polls_2008)
+ggplot(train_rpart)
+
+# access the final model and plot it
+plot(train_rpart$finalModel, margin = 0.1)
+text(train_rpart$finalModel, cex = 0.75)
+polls_2008 %>% 
+  mutate(y_hat = predict(train_rpart)) %>% 
+  ggplot() +
+  geom_point(aes(day, margin)) +
+  geom_step(aes(day, y_hat), col="red")
+
+# prune the tree 
+pruned_fit <- prune(fit, cp = 0.01)
+
+
+library(rpart)
+n <- 1000
+sigma <- 0.25
+set.seed(1) #set.seed(1, sample.kind = "Rounding") if using R 3.6 or later
+x <- rnorm(n, 0, 1)
+y <- 0.75 * x + rnorm(n, 0, sigma)
+dat <- data.frame(x = x, y = y)
+fit <- rpart(y ~ ., data = dat)
+plot(fit)
+text(fit)
+
+dat %>% 
+  mutate(y_hat = predict(fit)) %>% 
+  ggplot() +
+  geom_point(aes(x, y)) +
+  geom_step(aes(y_hat, x), col=2)
+
+stop
+
+
+train_rf <- randomForest(y ~ ., data=mnist_27$train)
+
+library(randomForest)
+fit <- randomForest(y ~ x, data = dat) 
+  dat %>% 
+  mutate(y_hat = predict(fit)) %>% 
+  ggplot() +
+  geom_point(aes(x, y)) +
+  geom_step(aes(x, y_hat), col = 2)
+  plot(fit)
+  text(fit)
+  
+  
+  library(dslabs)
+  library(caret)
+  data("tissue_gene_expression")
+  set.seed(1991)
+  y <- tissue_gene_expression$y
+  x <- tissue_gene_expression$x
+  #x <- x[, sample(ncol(x), 10)]
+  
+  train_rpart <- train(x, y,method = "rpart",control = data.frame(cp = seq(0, 0.1, 0.01)),data = tissue_gene_expression)
+  
+  train_rpart <- rpart(y ~ ., data = tissue_gene_expression), control = rpart.control(cp = seq(0, 0.1, 0.01)))
+
+fit <- rpart(y ~ x, data = tissue_gene_expression)
+train_rpart <- train(y ~ x,method = "rpart",tuneGrid = data.frame(cp = seq(0, 0.1, 0.01)), data = tissue_gene_expression)
+
+library(caret)
+set.seed(1991)
+y <- tissue_gene_expression$y
+x <- tissue_gene_expression$x
+
+
+#fit <- with(tissue_gene_expression, 
+            #train(x, y, method = "rpart",
+                 #tuneGrid = data.frame(cp = seq(0, 0.1, 0.01))))
+
+#ggplot(fit) 
+
+fitc <- with(tissue_gene_expression, 
+            train(x, y, method = "rpart",
+                  control = rpart.control(minsplit = 0),
+                  tuneGrid = data.frame(cp = seq(0, 0.1, 0.01))))
+
+fittree <- with(tissue_gene_expression, 
+             rpart(y ~ x,tissue_gene_expression))
+
+plot(fitc$finalModel)
+text(fitc$finalModel)
+
+ggplot(fitc) 
+confusionMatrix(fitc)
+
+
+set.seed(1991)
+y <- tissue_gene_expression$y
+x <- tissue_gene_expression$x
+
+fitrf <- with(tissue_gene_expression, 
+             train(x,y, method = "rf",
+                   tuneGrid = data.frame(mtry = seq(50, 200, 25)), 
+                   nodesize = 1))
+
+
+ggplot(fit)
+
+imp <- varImp(fitc)
+imp$importance %>% mutate(name = row.names(.), rank = rank(.$Overall)) %>% filter(name == "CFHR4")
+
+tree_terms <- as.character(unique(fitc$finalModel$frame$var[!(fitc$finalModel$frame$var == "<leaf>")]))
+tree_terms
+
+data_frame(term = rownames(imp$importance), 
+           importance = imp$importance$Overall) %>%
+  mutate(rank = rank(-importance)) %>% arrange(desc(importance)) %>%
+  filter(term %in% tree_terms)
