@@ -1946,3 +1946,115 @@ data_frame(term = rownames(imp$importance),
            importance = imp$importance$Overall) %>%
   mutate(rank = rank(-importance)) %>% arrange(desc(importance)) %>%
   filter(term %in% tree_terms)
+
+# Titanic problem starts-------------------------------
+
+library(titanic)    # loads titanic_train data frame
+library(caret)
+library(tidyverse)
+library(rpart)
+
+# 3 significant digits
+options(digits = 3)
+
+# clean the data - `titanic_train` is loaded with the titanic package
+titanic_clean <- titanic_train %>%
+  mutate(Survived = factor(Survived),
+         Embarked = factor(Embarked),
+         Age = ifelse(is.na(Age), median(Age, na.rm = TRUE), Age), # NA age to median age
+         FamilySize = SibSp + Parch + 1) %>%    # count family members
+  select(Survived,  Sex, Pclass, Age, Fare, SibSp, Parch, FamilySize, Embarked)
+
+str(titanic_clean)
+
+set.seed(42)
+test_index <- createDataPartition(titanic_clean$Survived, times = 1, p = 0.2, list = FALSE)
+train_set <- titanic_clean %>% slice(-test_index)
+test_set <- titanic_clean %>% slice(test_index)
+
+str(test_set)
+nrow(train_set %>% filter(Survived==1)) / nrow(train_set) 
+
+#set.seed(3)
+set.seed(3, sample.kind = "Rounding")
+# guess with equal probability of survival
+guess <- sample(c(0,1), nrow(test_set), replace = TRUE)
+mean(guess == test_set$Survived)
+
+train_set %>%
+  group_by(Sex) %>%
+  summarize(Survived = mean(Survived == 1))
+
+test_set %>%
+  summarize( (sum(Sex == 'female' & Survived == 1) + sum(Sex == 'male' & Survived == 0)) / n())
+
+train_set %>%
+  group_by(Sex,Pclass) %>%
+  summarize(Survived = mean(Survived == 1))
+
+test_set %>%
+  #group_by(Sex,Pclass) %>%
+  summarize( (sum(Pclass == 1 & Sex == 'female' & Survived == 1) + sum(Pclass == 1 & Sex == 'male' & Survived == 0) 
+              + sum(Pclass == 2 & Sex == 'female' & Survived == 1) + sum(Pclass == 2 & Sex == 'male' & Survived == 0)
+              + sum(Pclass == 3 & Sex == 'female' & Survived == 0) + sum(Pclass == 3 & Sex == 'male' & Survived == 0))/ n())
+              
+
+sex_model <- ifelse(test_set$Sex == "female", 1, 0)    # predict Survived=1 if female, 0 if male
+mean(sex_model == test_set$Survived)    # calculate accuracy
+
+y_hat_logit_sex <-  sex_model%>% factor
+confusionMatrix(y_hat_logit_sex, test_set$Survived)
+
+# Sensitivity : 0.873         
+# Specificity : 0.739         
+# Pos Pred Value : 0.842         
+# Neg Pred Value : 0.785         
+# Prevalence : 0.615         
+# Detection Rate : 0.536         
+# Detection Prevalence : 0.637         
+# Balanced Accuracy : 0.806         
+# 
+# 'Positive' Class : 0             
+
+F_meas(y_hat_logit_sex, test_set$Survived)
+
+# 0.857
+
+class_model <- ifelse(test_set$Pclass == 1, 1, 0)    # predict survival only if first class
+mean(class_model == test_set$Survived)    # calculate accuracy
+
+
+y_hat_logit_class <-  class_model%>% factor
+confusionMatrix(y_hat_logit_class, test_set$Survived)
+
+# Sensitivity : 0.855        
+# Specificity : 0.464        
+# Pos Pred Value : 0.718        
+# Neg Pred Value : 0.667        
+# Prevalence : 0.615        
+# Detection Rate : 0.525        
+# Detection Prevalence : 0.732        
+# Balanced Accuracy : 0.659        
+# 
+# 'Positive' Class : 0 
+F_meas(y_hat_logit_class, test_set$Survived)
+#0.78
+sex_class_model <- ifelse(test_set$Sex == "female" & test_set$Pclass != 3, 1, 0)
+mean(sex_class_model == test_set$Survived)
+
+y_hat_logit_SC <-  sex_class_model%>% factor
+confusionMatrix(y_hat_logit_SC, test_set$Survived)
+#   
+# Sensitivity : 0.991         
+# Specificity : 0.551         
+# Pos Pred Value : 0.779         
+# Neg Pred Value : 0.974         
+# Prevalence : 0.615         
+# Detection Rate : 0.609         
+# Detection Prevalence : 0.782         
+# Balanced Accuracy : 0.771         
+# 
+# 'Positive' Class : 0
+
+F_meas(y_hat_logit_SC, test_set$Survived)
+#0.872
