@@ -2058,3 +2058,114 @@ confusionMatrix(y_hat_logit_SC, test_set$Survived)
 
 F_meas(y_hat_logit_SC, test_set$Survived)
 #0.872
+
+set.seed(1)
+train_qda <- train(Survived ~ Fare, data = train_set, method = 'qda')
+Survived_hat_qda <- predict(train_qda, test_set)
+mean(test_set$Survived == Survived_hat_qda)
+
+set.seed(1)
+glm_fit <- glm(Survived ~ Age, data=train_set, family = "binomial")
+p_hat_logit <- predict(glm_fit, test_set)
+y_hat_logit <- ifelse(p_hat_logit >= 0,1,0) 
+confusionMatrix(y_hat_logit, test_set$Survived)
+
+fit_logreg_a <- glm(Survived ~ Age, data = train_set, family = 'binomial')
+survived_hat_a <- ifelse(predict(fit_logreg_a, test_set) >= 0, 1, 0)
+mean(survived_hat_a == test_set$Survived)
+
+
+fit_logreg_a <- glm(Survived ~ . , data = train_set, family = 'binomial')
+survived_hat_a <- ifelse(predict(fit_logreg_a, test_set) >= 0, 1, 0)
+mean(survived_hat_a == test_set$Survived)
+
+set.seed(6, sample.kind = "Rounding")
+k <- seq(3,51,2)
+fit_knn9a <- train(Survived ~ ., data = train_set, method = "knn", tuneGrid = data.frame(k))
+fit_knn9a$bestTune
+
+  #ggplot(fit_knn9a)
+  
+  survived_hat <- predict(fit_knn9a, test_set) %>% factor(levels = levels(test_set$Survived))
+  cm_test <- confusionMatrix(data = survived_hat, reference = test_set$Survived)
+  cm_test$overall["Accuracy"]
+  
+
+  set.seed(8, sample.kind = "Rounding")
+  k <- seq(3,51,2)
+  fit_knn10a <- train(Survived ~ ., data = train_set, method = "knn", tuneGrid = data.frame(k), trControl = trainControl(method = "cv", number=10, p=0.9))
+  fit_knn10a$bestTune
+  
+  #ggplot(fit_knn9a)
+  
+  survived_hat10 <- predict(fit_knn10a, test_set) %>% factor(levels = levels(test_set$Survived))
+  cm_test10 <- confusionMatrix(data = survived_hat10, reference = test_set$Survived)
+  cm_test10$overall["Accuracy"]
+  
+  
+  set.seed(10, sample.kind = "Rounding")
+  train_rpart <- train(Survived ~ .,
+                       method = "rpart",
+                       tuneGrid = data.frame(cp = seq(0, 0.05, 0.002)),
+                       data = train_set)
+  
+  train_rpart$bestTune
+  
+  survived <- predict(train_rpart,test_set)
+  confusionMatrix(data = survived, reference = test_set$Survived)
+  
+  
+  plot(train_rpart$finalModel)
+  text(train_rpart$finalModel)
+  
+  train_rpart$finalModel
+  plot(train_rpart$finalModel, margin=0.1)
+  text(train_rpart$finalModel, cex = 0.75)
+  
+  ggplot(train_rpart$finalModel) 
+  confusionMatrix(fitc)
+  
+  train_set %>% filter(Sex =='male' & Survived == 1) %>% summarize(Age)
+  
+  
+  #------------------
+  
+  #set.seed(10)
+  set.seed(10, sample.kind = "Rounding")    # simulate R 3.5
+  train_rpart <- train(Survived ~ ., 
+                       method = "rpart",
+                       tuneGrid = data.frame(cp = seq(0, 0.05, 0.002)),
+                       data = train_set)
+  train_rpart$bestTune
+  rpart_preds <- predict(train_rpart, test_set)
+  mean(rpart_preds == test_set$Survived)
+  train_rpart$finalModel # inspect final model
+  
+  # make plot of decision tree
+  plot(train_rpart$finalModel, margin = 0.1)
+  text(train_rpart$finalModel)
+  
+  # install.packages("rpart.plot")
+  # library(rpart)
+  
+    
+  rpart_train <- rpart(Survived ~ ., data = train_set, cp = .016)
+  
+  install.packages("sos")
+  library(plyr)
+  findFn("rbind.fill")
+  
+  str(test_set)
+  
+  rpart.plot(rpart_train)
+  oos_test <- test_set[0,]
+  oos_test <- rbind.fill(oos_test, data.frame(Sex="male",  Age=28))
+  oos_test <- rbind.fill(oos_test, data.frame(Sex="female",  Pclass=2))
+  oos_test <- rbind.fill(oos_test, data.frame(Sex="female",  Pclass=3, Fare=8))
+  oos_test <- rbind.fill(oos_test, data.frame(Sex="male",  Age=5, SibSp = 4))
+  oos_test <- rbind.fill(oos_test, data.frame(Sex="female",  Pclass=3, Fare=25))
+  oos_test <- rbind.fill(oos_test, data.frame(Sex="female",  Pclass=1, Age=17, SibSp = 2))
+  oos_test <- rbind.fill(oos_test, data.frame(Sex="male",  Pclass=1, Age=17, SibSp = 2))
+  predict(rpart_train, oos_test, type="class")
+  
+  
